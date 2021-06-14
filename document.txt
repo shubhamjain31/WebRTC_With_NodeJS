@@ -1,0 +1,15 @@
+################################################## @Server-side with NodeJS@ ########################################
+
+Steps:
+
+1) install nodejs
+
+	to check nodejs is installed or not, enter(terminal)
+		node -v
+
+2) Enter a command: npm init for creating a package file
+3) install express using this command:
+	npm install express
+
+4) in your terminal:
+	node index.js
