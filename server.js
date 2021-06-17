@@ -140,6 +140,15 @@ function getRoom(socket, roomname, callback){
 	}
 }
 
+function getEndpointForUser(socket, roomname, senderid, callback){
+	let myroom = io.sockets.adpater.rooms[roomname]
+	let asker = myroom.participants[sockets.id]
+	let sender = myroom.participants[senderid]
+
+	if(asker.id === sender.id){
+		return callback(null, asker.outgoingMedia)
+	}
+}
 app.use(express.static('public'))
 
 http.listen(3000, () => {
