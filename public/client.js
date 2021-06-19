@@ -43,7 +43,7 @@ socket.on('message', message => {
 			onExistingParticipants(message.userid, message.existingUsers)
 			break
 		case 'receiveVedioAnswer':
-			receiveVedio(message.senderid, message.sdpAnswer)
+			onReceiveVedioAnswer(message.senderid, message.sdpAnswer)
 			break
 		case 'candidate':
 			addIceCandidate(message.userid, message.candidate)
@@ -178,4 +178,12 @@ function onExistingParticipants(userid, existingUsers){
 		}
 		sendMessage(message)
 	}
+}
+
+function onReceiveVedioAnswer(senderid, sdpAnswer){
+	participants[senderid].rtcPeer.processAnswer(sdpAnswer)
+}
+
+function addIceCandidate(userid, candidate){
+	participants[userid].rtcPeer.addIceCandidate(candidate)
 }

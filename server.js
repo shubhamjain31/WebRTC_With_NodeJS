@@ -148,7 +148,103 @@ function getEndpointForUser(socket, roomname, senderid, callback){
 	if(asker.id === sender.id){
 		return callback(null, asker.outgoingMedia)
 	}
+
+	if(asker.incomingMedia[sender.id]){
+		sender.outgoingMedia.connect(asker.incomingMedia[sender.id], err => {
+			if(err){
+			return callback(err)
+			}
+			callback(null, asker.incomingMedia[sender.id])
+		})
+	}	
+	else{
+		myRoom.pipeline.create('WebRtcEndpoint', (err, incoming) => {
+			if(err){
+				return callback(err)
+			}
+
+			asker.incomingMedia[sender.id] = incoming
+
+			let iceCandidateQueue = iceCandidateQueues[sender.id]
+			if(iceCandidateQueue){
+				while(iceCandidateQueues.length){
+					let ice = iceCandidateQueue.shift()
+					user.outgoingMedia.addIceCandidate(ice.candidate)
+				}
+			}
+
+			user.outgoingMedia.on('OnIceCandidate', event => {
+				let candidate = kurento.register.complexTypes.IceCandidates(event.candidate)
+				socket.emit('message', {
+					event: 	'candidate',
+					userid:  sender.id,
+					candidate:candidate
+				})
+			})
+
+			sender.outgoingMedia.connect(incoming, err => {
+			if(err){
+				return callback(err)
+			}
+			callback(null, asker.incomingMedia[sender.id])
+			})
+		})
+	}
 }
+
+function receiveVedioFrom(socket, userid, roomName, sdpOffer, callback){
+	getEndpointForUser(socket, roomName, userid, (err, endpoint) => {
+		if(err){
+				return callback(err)
+			}
+		endpoint.processOffer(sdpOffer, (err, sdpAnswer) => {
+			if(err){
+				return callback(err)
+			}
+			socket.emit('message', {
+				event: 	'receiveVedioAnswer',
+				senderid:  userid,
+				sdpAnswer:sdpAnswer
+			})
+			endpoint.gatherCandidates(err => {
+				if(err){
+					return callback(err)
+				}
+			})
+		})
+	})
+}
+
+function addIceCandidate(socket, senderid, roomName, iceCandidate, callback){
+	let user = io.sockets.adpater.rooms[roomName].participants[socket.id]
+	if(user != null){
+		let candidate = kurento.register.complexTypes.IceCandidate(iceCandidate)
+		if(senderid === user.id){
+			if(user.outgoingMedia){
+				user.outgoingMedia.addIceCandidate(candidate)
+			}
+			else{
+				iceCandidateQueues[user.id].push[{candidate:candidate}]
+			}
+		}
+		else{
+			if(user.incomingMedia[senderid]){
+				user.incomingMedia[senderid].addIceCandidate(candidate)
+			}
+			else{
+				if(iceCandidateQueues[senderid]){
+					iceCandidateQueues[senderid] = {}
+				}
+				iceCandidateQueues[senderid].push[{candidate:candidate}]
+			}
+		}
+		callback(null)
+	}
+	else{
+		callback(new Error("addIceCandidate failed"))
+	}
+}
+
 app.use(express.static('public'))
 
 http.listen(3000, () => {
