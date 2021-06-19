@@ -16,7 +16,7 @@ Steps:
 	npm install express
 
 4) in your terminal:
-	node index.js
+	node index.js or npm start
 
 5) install socket.io by using this command:
 	npm install -S socket.io
